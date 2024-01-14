@@ -213,7 +213,7 @@ public class ScreenshotToolWindow : EditorWindow
         GUILayout.FlexibleSpace();
 
         GUIStyle buttonStyle = new GUIStyle("Button");
-        buttonStyle.normal.textColor = canShowUI ? Color.blue : Color.gray;
+        buttonStyle.normal.textColor = Color.gray;
         buttonStyle.alignment = TextAnchor.MiddleCenter;
 
         canShowUI = GUILayout.Toggle(canShowUI, new GUIContent("Toggle UI"), buttonStyle, GUILayout.Width(100));
@@ -225,15 +225,11 @@ public class ScreenshotToolWindow : EditorWindow
         createWaterMark = GUILayout.Toggle(createWaterMark, new GUIContent("Add Watermark"), buttonStyle, GUILayout.Width(100));
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
-
+GUILayout.Space(10);
         if (createWaterMark)
         {
-            GUILayout.BeginVertical(EditorStyles.helpBox);
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.Label("Drag and Drop WaterMark", TitleStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            GUILayout.BeginVertical();
+
             Event currentEvent = Event.current;
             Rect dropArea = GUILayoutUtility.GetRect(0.0f, 100, GUILayout.ExpandWidth(true));
 
@@ -254,7 +250,7 @@ public class ScreenshotToolWindow : EditorWindow
                         {
                             if (draggedObject is Texture2D texture)
                             {
-                                // Handle the dragged texture as a watermark/logo
+                               
                                 watermarkImagePath = AssetDatabase.GetAssetPath(texture);
                                 draggedTexture = texture;
                             }
@@ -265,13 +261,14 @@ public class ScreenshotToolWindow : EditorWindow
                     break;
             }
 
-            // Display the dragged texture as an image icon during drag-and-drop
-            EditorGUI.ObjectField(dropArea, draggedTexture, typeof(Texture2D), false);
+            float objectFieldSize = 75;
+            Rect objectFieldRect = new Rect(dropArea.x + (dropArea.width - objectFieldSize) / 2, dropArea.y + (dropArea.height - objectFieldSize) / 2, objectFieldSize, objectFieldSize);
+
+           
+            draggedTexture = EditorGUI.ObjectField(objectFieldRect, draggedTexture, typeof(Texture2D), false) as Texture2D;
 
             GUILayout.EndVertical();
         }
-
-
 
         GUILayout.Space(10);
         GUILayout.Label("Resolution", smallHeader);
@@ -313,25 +310,17 @@ public class ScreenshotToolWindow : EditorWindow
                 }
             }
         }
-
-        if (selectedCamera != null && previewTexture != null)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.Label("Camera Preview", TitleStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            GUILayout.Space(10);
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            DrawTexture(previewTexture, GUILayout.Width(previewSize.x), GUILayout.Height(previewSize.y));
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-        }
-
+        GUILayout.Space(10);
         if (selectedCamera != null)
         {
-            if (GUILayout.Button("Screen Shot"))
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+
+            GUIStyle screenshotButtonStyle = new GUIStyle("Button");
+            screenshotButtonStyle.fontSize = 16;
+            screenshotButtonStyle.fontStyle = FontStyle.Bold;
+
+            if (GUILayout.Button("Take Screenshot", screenshotButtonStyle, GUILayout.Width(200), GUILayout.Height(40)))
             {
                 if (!string.IsNullOrEmpty(fileName) && Directory.Exists(_path))
                 {
@@ -348,8 +337,26 @@ public class ScreenshotToolWindow : EditorWindow
                         Debug.LogError("Please specify a valid directory for the image");
                     }
                 }
-
             }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
+
+        if (selectedCamera != null && previewTexture != null)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("Camera Preview", TitleStyle);
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            GUILayout.Space(10);
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            DrawTexture(previewTexture, GUILayout.Width(previewSize.x), GUILayout.Height(previewSize.y));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
         }
         EditorGUILayout.EndScrollView();
         Repaint();
