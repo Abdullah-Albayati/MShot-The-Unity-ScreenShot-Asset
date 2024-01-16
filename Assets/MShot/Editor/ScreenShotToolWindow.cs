@@ -10,16 +10,12 @@ public class ScreenshotToolWindow : EditorWindow
     private Vector2 previewSize = new Vector2(750, 500);
     private Vector2 scrollPosition;
 
-    private string _path = "Assets/";
+    public string _path { get; set; } = "Assets/";
     private string fileName;
     private int height = 512;
     private int width = 512;
     private bool canShowUI;
-    private bool createWaterMark;
-    private string watermarkImagePath;
-    private GUIStyle dropAreaStyle;
-
-    private Texture2D draggedTexture;
+    private bool is3D;
 
     private string cameraIdentifier;
     public ImageFormat imageFormat = ImageFormat.PNG;
@@ -55,7 +51,8 @@ public class ScreenshotToolWindow : EditorWindow
         UpdateSelectedCamera();
         imageFormat = LoadImageFormat();
         fileName = LoadFileName();
-
+        canShowUI = LoadToggleUI();
+        is3D = LoadCameraPrespective();
     }
     private void OnDisable()
     {
@@ -64,8 +61,11 @@ public class ScreenshotToolWindow : EditorWindow
         SaveCamera(selectedCamera);
         SaveFileName(fileName);
         SaveResolution(width, height);
-
+        SaveToggleUI(canShowUI);
+        SaveCameraPrespective(is3D);
     }
+
+    #region SaveAndLoad
 
     private void SaveResolution(int w, int h)
     {
@@ -136,6 +136,23 @@ public class ScreenshotToolWindow : EditorWindow
         int formatAsInt = EditorPrefs.GetInt("ImageFormat", 0);
         return (ImageFormat)formatAsInt;
     }
+    private void SaveToggleUI(bool toggleUi)
+    {
+        EditorPrefs.SetBool("UI", toggleUi);
+    }
+    private bool LoadToggleUI()
+    {
+        return EditorPrefs.GetBool("UI", false);
+    }
+    private void SaveCameraPrespective(bool is3D)
+    {
+        EditorPrefs.SetBool("3D", is3D);
+    }
+    private bool LoadCameraPrespective()
+    {
+        return EditorPrefs.GetBool("3D", false);
+    }
+    #endregion
     private void OnGUI()
     {
         InitializeGUI();
@@ -220,55 +237,28 @@ public class ScreenshotToolWindow : EditorWindow
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
 
+        GUILayout.Space(10);
+
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
-        createWaterMark = GUILayout.Toggle(createWaterMark, new GUIContent("Add Watermark"), buttonStyle, GUILayout.Width(100));
+
+
+        GUIStyle activeButtonStyle3D = new GUIStyle(buttonStyle);
+        GUIStyle inactiveButtonStyle3D = new GUIStyle(buttonStyle);
+        activeButtonStyle3D.normal.textColor = Color.blue;
+        inactiveButtonStyle3D.normal.textColor = Color.gray;
+
+        is3D = GUILayout.Toggle(is3D, new GUIContent("3D"), is3D ? activeButtonStyle3D : inactiveButtonStyle3D, GUILayout.Width(30));
+
+
+        GUIStyle activeButtonStyle2D = new GUIStyle(buttonStyle);
+        GUIStyle inactiveButtonStyle2D = new GUIStyle(buttonStyle);
+        activeButtonStyle2D.normal.textColor = Color.blue;
+        inactiveButtonStyle2D.normal.textColor = Color.gray;
+
+        is3D = !GUILayout.Toggle(!is3D, new GUIContent("2D"), is3D ? inactiveButtonStyle2D : activeButtonStyle2D, GUILayout.Width(30));
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
-GUILayout.Space(10);
-        if (createWaterMark)
-        {
-            GUILayout.BeginVertical();
-
-            Event currentEvent = Event.current;
-            Rect dropArea = GUILayoutUtility.GetRect(0.0f, 100, GUILayout.ExpandWidth(true));
-
-            switch (currentEvent.type)
-            {
-                case EventType.DragUpdated:
-                case EventType.DragPerform:
-                    if (!dropArea.Contains(currentEvent.mousePosition))
-                        break;
-
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-
-                    if (currentEvent.type == EventType.DragPerform)
-                    {
-                        DragAndDrop.AcceptDrag();
-
-                        foreach (System.Object draggedObject in DragAndDrop.objectReferences)
-                        {
-                            if (draggedObject is Texture2D texture)
-                            {
-                               
-                                watermarkImagePath = AssetDatabase.GetAssetPath(texture);
-                                draggedTexture = texture;
-                            }
-                        }
-                    }
-
-                    currentEvent.Use();
-                    break;
-            }
-
-            float objectFieldSize = 75;
-            Rect objectFieldRect = new Rect(dropArea.x + (dropArea.width - objectFieldSize) / 2, dropArea.y + (dropArea.height - objectFieldSize) / 2, objectFieldSize, objectFieldSize);
-
-           
-            draggedTexture = EditorGUI.ObjectField(objectFieldRect, draggedTexture, typeof(Texture2D), false) as Texture2D;
-
-            GUILayout.EndVertical();
-        }
 
         GUILayout.Space(10);
         GUILayout.Label("Resolution", smallHeader);
@@ -290,6 +280,15 @@ GUILayout.Space(10);
 
         if (selectedCamera != null && (previewTexture == null || previewTexture.width != (int)previewSize.x || previewTexture.height != (int)previewSize.y))
         {
+            bool previousCameraView = selectedCamera.orthographic;
+            if (is3D)
+            {
+                selectedCamera.orthographic = false;
+            }
+            else
+            {
+                selectedCamera.orthographic = true;
+            }
             previewTexture = RenderPreview(selectedCamera);
             previewSize.x = width;
             previewSize.y = height;
@@ -302,11 +301,22 @@ GUILayout.Space(10);
         {
             if (GUILayout.Button("Refresh Preview"))
             {
+                bool previousCameraView = selectedCamera.orthographic;
+                if (is3D)
+                {
+                    selectedCamera.orthographic = false;
+                }
+                else
+                {
+                    selectedCamera.orthographic = true;
+                }
+
                 if (selectedCamera != null)
                 {
                     previewTexture = RenderPreview(selectedCamera);
                     previewSize.x = width;
                     previewSize.y = height;
+                    selectedCamera.orthographic = previousCameraView;
                 }
             }
         }
@@ -324,7 +334,7 @@ GUILayout.Space(10);
             {
                 if (!string.IsNullOrEmpty(fileName) && Directory.Exists(_path))
                 {
-                    TakeScreenShot(_path, imageFormat);
+                    TakeScreenShot(selectedCamera, _path, imageFormat);
                 }
                 else
                 {
@@ -458,7 +468,6 @@ GUILayout.Space(10);
             }
         }
 
-
         return renderTexture;
     }
 
@@ -468,22 +477,31 @@ GUILayout.Space(10);
         GUI.DrawTexture(rect, texture, ScaleMode.ScaleToFit);
     }
 
-    public void TakeScreenShot(string fullPath, ImageFormat format)
+    public void TakeScreenShot(Camera camera, string fullPath, ImageFormat format)
     {
 
-        RenderTexture originalTargetTexture = selectedCamera.targetTexture;
-
+        RenderTexture originalTargetTexture = camera.targetTexture;
+        bool previousCameraView = selectedCamera.orthographic;
+        if (is3D)
+        {
+            camera.orthographic = false;
+        }
+        else
+        {
+            camera.orthographic = true;
+        }
         float aspectRatio = (float)width / height;
 
         RenderTexture rt = new RenderTexture(width, Mathf.RoundToInt(width / aspectRatio), 24);
-        selectedCamera.targetTexture = rt;
+        camera.targetTexture = rt;
 
         Texture2D screenShot = new Texture2D(width, Mathf.RoundToInt(width / aspectRatio), TextureFormat.RGBA32, false);
-        selectedCamera.Render();
+        camera.Render();
         RenderTexture.active = rt;
         screenShot.ReadPixels(new Rect(0, 0, width, Mathf.RoundToInt(width / aspectRatio)), 0, 0);
-        selectedCamera.targetTexture = originalTargetTexture;
+        camera.targetTexture = originalTargetTexture;
         RenderTexture.active = null;
+        camera.orthographic = previousCameraView;
 
         DestroyImmediate(rt);
 
@@ -533,6 +551,6 @@ GUILayout.Space(10);
 
         File.WriteAllBytes(absolutePath, bytes);
 
-        Debug.Log($"Screenshot taken by '{selectedCamera.name}' have been saved to: '{fullPath}/{fileName}.{extension}' with resolution '{width}x{height}' and format '{imageFormat}'");
+        Debug.Log($"Screenshot taken by '{camera.name}' have been saved to: '{fullPath}/{fileName}.{extension}' with resolution '{width}x{height}' and format '{imageFormat}'");
     }
 }

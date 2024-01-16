@@ -18,14 +18,15 @@ public class PhotoModeEditor : Editor
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
-         
-         EditorGUILayout.HelpBox("This will create an AppData folder for the player",MessageType.Info);
+
+        EditorGUILayout.HelpBox("This will create an 'AppData' folder for the player.", MessageType.Info);
         EditorGUILayout.PropertyField(canUserTakeScreenShot, new GUIContent("Can User Take Screenshot"));
-        if(canUserTakeScreenShot.boolValue == true){
- EditorGUILayout.PropertyField(screenshotKey, new GUIContent("Screenshot Key"));
-        EditorGUILayout.PropertyField(screenshotFolder, new GUIContent("Screenshot Folder"));
+        if (canUserTakeScreenShot.boolValue == true)
+        {
+            EditorGUILayout.PropertyField(screenshotKey, new GUIContent("Screenshot Key"));
+            EditorGUILayout.PropertyField(screenshotFolder, new GUIContent("Screenshot Folder"));
         }
-       
+
 
         serializedObject.ApplyModifiedProperties();
     }
