@@ -17,6 +17,8 @@ public class ScreenshotToolWindow : EditorWindow
     private bool canShowUI;
     private bool is3D;
 
+    private bool hideSky;
+
     private string cameraIdentifier;
     public ImageFormat imageFormat = ImageFormat.PNG;
     public enum ImageFormat
@@ -238,6 +240,14 @@ public class ScreenshotToolWindow : EditorWindow
         GUILayout.EndHorizontal();
 
         GUILayout.Space(10);
+        GUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
+        hideSky = GUILayout.Toggle(hideSky, new GUIContent("Hide Sky"), buttonStyle, GUILayout.Width(100));
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+
+
+        GUILayout.Space(10);
 
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
@@ -289,6 +299,16 @@ public class ScreenshotToolWindow : EditorWindow
             {
                 selectedCamera.orthographic = true;
             }
+            var previousFlags = selectedCamera.clearFlags;
+
+            if (hideSky)
+            {
+                selectedCamera.clearFlags = CameraClearFlags.Nothing;
+            }
+            else
+            {
+                selectedCamera.clearFlags = previousFlags;
+            }
             previewTexture = RenderPreview(selectedCamera);
             previewSize.x = width;
             previewSize.y = height;
@@ -310,6 +330,16 @@ public class ScreenshotToolWindow : EditorWindow
                 {
                     selectedCamera.orthographic = true;
                 }
+                var previousFlags = selectedCamera.clearFlags;
+
+                if (hideSky)
+                {
+                    selectedCamera.clearFlags = CameraClearFlags.Nothing;
+                }
+                else
+                {
+                    selectedCamera.clearFlags = previousFlags;
+                }
 
                 if (selectedCamera != null)
                 {
@@ -317,6 +347,7 @@ public class ScreenshotToolWindow : EditorWindow
                     previewSize.x = width;
                     previewSize.y = height;
                     selectedCamera.orthographic = previousCameraView;
+                    selectedCamera.clearFlags = previousFlags;
                 }
             }
         }
@@ -489,6 +520,16 @@ public class ScreenshotToolWindow : EditorWindow
         else
         {
             camera.orthographic = true;
+        }
+        var previousFlags = selectedCamera.clearFlags;
+
+        if (hideSky)
+        {
+            selectedCamera.clearFlags = CameraClearFlags.Nothing;
+        }
+        else
+        {
+            selectedCamera.clearFlags = previousFlags;
         }
         float aspectRatio = (float)width / height;
 
