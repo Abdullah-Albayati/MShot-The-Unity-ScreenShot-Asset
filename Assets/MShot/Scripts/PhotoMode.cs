@@ -46,7 +46,7 @@ public class PhotoMode : MonoBehaviour
 
        
         string fileName;
-        if(!string.IsNullOrEmpty(screenShotName)){
+        if(string.IsNullOrEmpty(screenShotName)){
             fileName = $"Screenshot_{System.DateTime.Now:yyyyMMdd_HHmmss}.png";
         }
         else{

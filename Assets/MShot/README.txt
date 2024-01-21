@@ -14,6 +14,8 @@ This Unity Asset License Agreement (the "Agreement") is entered into by and betw
 
    d. Attribution: No attribution to Licensor is required in any projects or works created using the Asset.
 
+   e. Icons from flaticon.com: The Asset may include icons sourced from flaticon.com. Licensee acknowledges and agrees to comply with the terms of use for these icons as specified by flaticon.com.
+
 3. SUPPORT AND UPDATES
    Licensor is not obligated to provide any support, maintenance, or updates for the Asset. However, Licensor may, at its discretion, offer support or updates.
 

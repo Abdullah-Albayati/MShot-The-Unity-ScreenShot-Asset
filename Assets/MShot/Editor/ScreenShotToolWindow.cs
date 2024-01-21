@@ -55,6 +55,7 @@ public class ScreenshotToolWindow : EditorWindow
         fileName = LoadFileName();
         canShowUI = LoadToggleUI();
         is3D = LoadCameraPrespective();
+        hideSky = LoadClearFlags();
     }
     private void OnDisable()
     {
@@ -65,6 +66,7 @@ public class ScreenshotToolWindow : EditorWindow
         SaveResolution(width, height);
         SaveToggleUI(canShowUI);
         SaveCameraPrespective(is3D);
+        SaveClearFlags(hideSky);
     }
 
     #region SaveAndLoad
@@ -152,7 +154,15 @@ public class ScreenshotToolWindow : EditorWindow
     }
     private bool LoadCameraPrespective()
     {
-        return EditorPrefs.GetBool("3D", false);
+        return EditorPrefs.GetBool("3D", true);
+    }
+    private void SaveClearFlags(bool clearFlags)
+    {
+        EditorPrefs.SetBool("clearFlags", clearFlags);
+    }
+    private bool LoadClearFlags()
+    {
+        return EditorPrefs.GetBool("clearFlags", false);
     }
     #endregion
     private void OnGUI()
@@ -312,6 +322,8 @@ public class ScreenshotToolWindow : EditorWindow
             previewTexture = RenderPreview(selectedCamera);
             previewSize.x = width;
             previewSize.y = height;
+            selectedCamera.orthographic = previousCameraView;
+            selectedCamera.clearFlags = previousFlags;
         }
         if (selectedCamera != null)
         {
@@ -463,6 +475,7 @@ public class ScreenshotToolWindow : EditorWindow
                 Canvas canvas = pair.Key;
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = selectedCamera;
+                canvas.planeDistance = 1;
             }
 
             camera.targetTexture = renderTexture;
@@ -525,11 +538,11 @@ public class ScreenshotToolWindow : EditorWindow
 
         if (hideSky)
         {
-            selectedCamera.clearFlags = CameraClearFlags.Nothing;
+            camera.clearFlags = CameraClearFlags.Nothing;
         }
         else
         {
-            selectedCamera.clearFlags = previousFlags;
+            camera.clearFlags = previousFlags;
         }
         float aspectRatio = (float)width / height;
 
@@ -543,6 +556,7 @@ public class ScreenshotToolWindow : EditorWindow
         camera.targetTexture = originalTargetTexture;
         RenderTexture.active = null;
         camera.orthographic = previousCameraView;
+        camera.clearFlags = previousFlags;
 
         DestroyImmediate(rt);
 
