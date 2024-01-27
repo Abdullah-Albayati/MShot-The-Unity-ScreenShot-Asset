@@ -1,33 +1,36 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(PhotoMode))]
-public class PhotoModeEditor : Editor
+namespace MShot
 {
-    SerializedProperty canUserTakeScreenShot;
-    SerializedProperty screenshotKey;
-    SerializedProperty screenshotFolder;
-
-    private void OnEnable()
+    [CustomEditor(typeof(PhotoMode))]
+    public class PhotoModeEditor : Editor
     {
-        canUserTakeScreenShot = serializedObject.FindProperty("canUserTakeScreenShot");
-        screenshotKey = serializedObject.FindProperty("screenshotKey");
-        screenshotFolder = serializedObject.FindProperty("screenshotFolder");
-    }
+        SerializedProperty canUserTakeScreenShot;
+        SerializedProperty screenshotKey;
+        SerializedProperty screenshotFolder;
 
-    public override void OnInspectorGUI()
-    {
-        serializedObject.Update();
-
-        EditorGUILayout.HelpBox("This will create an 'AppData' folder for the player.", MessageType.Info);
-        EditorGUILayout.PropertyField(canUserTakeScreenShot, new GUIContent("Can User Take Screenshot"));
-        if (canUserTakeScreenShot.boolValue == true)
+        private void OnEnable()
         {
-            EditorGUILayout.PropertyField(screenshotKey, new GUIContent("Screenshot Key"));
-            EditorGUILayout.PropertyField(screenshotFolder, new GUIContent("Screenshot Folder"));
+            canUserTakeScreenShot = serializedObject.FindProperty("canUserTakeScreenShot");
+            screenshotKey = serializedObject.FindProperty("screenshotKey");
+            screenshotFolder = serializedObject.FindProperty("screenshotFolder");
         }
 
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
 
-        serializedObject.ApplyModifiedProperties();
+            EditorGUILayout.HelpBox("This will create an 'AppData' folder for the player.", MessageType.Info);
+            EditorGUILayout.PropertyField(canUserTakeScreenShot, new GUIContent("Can User Take Screenshot"));
+            if (canUserTakeScreenShot.boolValue == true)
+            {
+                EditorGUILayout.PropertyField(screenshotKey, new GUIContent("Screenshot Key"));
+                EditorGUILayout.PropertyField(screenshotFolder, new GUIContent("Screenshot Folder"));
+            }
+
+
+            serializedObject.ApplyModifiedProperties();
+        }
     }
 }

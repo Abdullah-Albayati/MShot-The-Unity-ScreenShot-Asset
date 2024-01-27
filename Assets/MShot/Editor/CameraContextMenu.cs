@@ -1,18 +1,22 @@
 using UnityEditor;
 using UnityEngine;
-public class CameraContextMenu : EditorWindow
+
+namespace MShot
 {
-    [MenuItem("CONTEXT/Camera/Take Screen Shot")]
-    private static void TakeScreenshot(MenuCommand menuCommand)
+    public class CameraContextMenu : EditorWindow
     {
-        Camera camera = menuCommand.context as Camera;
-
-        if (camera != null)
+        [MenuItem("CONTEXT/Camera/Take Screen Shot")]
+        private static void TakeScreenshot(MenuCommand menuCommand)
         {
-            ScreenshotToolWindow window = CreateInstance<ScreenshotToolWindow>();
+            Camera camera = menuCommand.context as Camera;
 
-            window.TakeScreenShot(camera,window._path,window.imageFormat);
-           
+            if (camera != null)
+            {
+                ScreenshotToolWindow window = CreateInstance<ScreenshotToolWindow>();
+
+                window.TakeScreenShot(camera, window._path, window.imageFormat);
+
+            }
         }
     }
 }
