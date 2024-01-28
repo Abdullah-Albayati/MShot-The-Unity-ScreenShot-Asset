@@ -1,6 +1,6 @@
-CUSTOM ASSET LICENSE AGREEMENT
+UNITY ASSET LICENSE AGREEMENT
 
-This Custom Asset License Agreement (the "Agreement") is entered into by and between [Your Name] ("Licensor") and any individual or entity downloading or using the Unity asset known as [Your Asset Name] (the "Asset").
+This Unity Asset License Agreement (the "Agreement") is entered into by and between Abdullah Ali Waleed Al-Bayati ("Licensor") and any individual or entity downloading or using the Unity asset known as MShot (the "Asset").
 
 1. LICENSE GRANT
    Subject to the terms and conditions of this Agreement, Licensor hereby grants the Licensee a non-exclusive, non-transferable license to use the Asset.
@@ -13,6 +13,8 @@ This Custom Asset License Agreement (the "Agreement") is entered into by and bet
    c. Modification: Licensee is expressly prohibited from modifying, reverse engineering, decompiling, or disassembling the source code of the Asset.
 
    d. Attribution: No attribution to Licensor is required in any projects or works created using the Asset.
+
+   e. Icons from flaticon.com: The Asset may include icons sourced from flaticon.com. Licensee acknowledges and agrees to comply with the terms of use for these icons as specified by flaticon.com.
 
 3. SUPPORT AND UPDATES
    Licensor is not obligated to provide any support, maintenance, or updates for the Asset. However, Licensor may, at its discretion, offer support or updates.
@@ -28,5 +30,5 @@ This Custom Asset License Agreement (the "Agreement") is entered into by and bet
 
 By downloading or using the Asset, Licensee agrees to be bound by the terms and conditions of this Agreement.
 
-[Your Name]
-[Your Contact Information]
+Abdullah Ali Waleed Al-Bayati
+Zv33ks@gmail.com
