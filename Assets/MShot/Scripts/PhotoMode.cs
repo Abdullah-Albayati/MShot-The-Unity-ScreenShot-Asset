@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -8,7 +9,7 @@ namespace MShot
     public class PhotoMode : MonoBehaviour
     {
         [SerializeField]
-        bool canUserTakeScreenShot = true;
+        bool showUI;
         [SerializeField]
         private KeyCode screenshotKey = KeyCode.F12;
 
@@ -31,39 +32,101 @@ namespace MShot
         }
         void Update()
         {
-            if (Input.GetKeyDown(screenshotKey) && canUserTakeScreenShot)
+            if (Input.GetKeyDown(screenshotKey))
             {
-                CaptureScreenshot(null);
+                MShot.PhotoMode.instance.CaptureScreenshot(null,null,showUI);
             }
         }
 
-        public void CaptureScreenshot(string screenShotName)
+        public Texture2D CaptureScreenshot(string screenShotName = default(string), Camera camera = null, bool showUI = false)
         {
-
             string folderPath = System.IO.Path.Combine(Application.persistentDataPath, screenshotFolder);
-
-
+            Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
             System.IO.Directory.CreateDirectory(folderPath);
-
-
-            string fileName;
-            if (string.IsNullOrEmpty(screenShotName))
+            if (camera == null)
             {
-                fileName = $"Screenshot_{System.DateTime.Now:yyyyMMdd_HHmmss}.png";
+                Camera mainCamera = Camera.main;
+                if (mainCamera == null)
+                {
+                    Debug.LogError("No camera provided, and no main camera found in the scene.");
+                    return null;
+                }
+                camera = mainCamera;
+            }
+            if (showUI)
+            {
+
+                foreach (Canvas canvas in FindObjectsOfType<Canvas>())
+                {
+                    canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
+                }
+
+                foreach (var pair in canvasData)
+                {
+                    Canvas canvas = pair.Key;
+                    canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                    canvas.worldCamera = camera;
+                    canvas.planeDistance = 1;
+                }
             }
             else
             {
-                fileName = screenShotName;
+
+
+                foreach (Canvas canvas in FindObjectsOfType<Canvas>())
+                {
+                    canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
+                }
+                foreach (var pair in canvasData)
+                {
+                    Canvas canvas = pair.Key;
+                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    canvas.worldCamera = camera;
+                }
+            }
+            RenderTexture originalTargetTexture = camera.targetTexture;
+
+            string fileName = string.IsNullOrEmpty(screenShotName)
+                ? $"Screenshot_{System.DateTime.Now:yyyyMMdd_HHmmss}"
+                : $"{screenShotName}";
+
+
+            int count = 0;
+            string baseFileName = fileName;
+            string filePath = System.IO.Path.Combine(folderPath, $"{baseFileName}.png");
+
+            RenderTexture renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+            camera.targetTexture = renderTexture;
+
+            Texture2D screenshot = new Texture2D(renderTexture.width, renderTexture.height);
+            camera.Render();
+            RenderTexture.active = renderTexture;
+            screenshot.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+            screenshot.Apply();
+            camera.targetTexture = originalTargetTexture;
+            RenderTexture.active = null;
+            Destroy(renderTexture);
+            foreach (var pair in canvasData)
+            {
+                Canvas canvas = pair.Key;
+                (canvas.renderMode, canvas.worldCamera) = pair.Value;
             }
 
 
-            string filePath = System.IO.Path.Combine(folderPath, fileName);
 
 
-            ScreenCapture.CaptureScreenshot(filePath);
-
+            while (File.Exists(filePath))
+            {
+                count++;
+                baseFileName = $"{fileName}_{count}";
+                filePath = System.IO.Path.Combine(folderPath, $"{baseFileName}.png");
+            }
+            byte[] bytes = screenshot.EncodeToPNG();
+            System.IO.File.WriteAllBytes(filePath, bytes);
 
             Debug.Log($"Screenshot saved to: {filePath}");
+
+            return screenshot;
         }
     }
 }

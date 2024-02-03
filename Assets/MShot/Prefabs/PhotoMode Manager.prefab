@@ -44,6 +44,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 468ad29c141fb9c4bbaaa33426746b52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canUserTakeScreenShot: 1
+  showUI: 0
   screenshotKey: 293
   screenshotFolder: Screenshots
