@@ -3,7 +3,9 @@ using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 using System;
+#if POSTPROCESSING_3_2_2 
 using UnityEngine.Rendering.PostProcessing;
+#endif
 namespace MShot
 {
     public class ScreenshotToolWindow : EditorWindow
@@ -31,7 +33,7 @@ namespace MShot
             JPEG,
             EXR,
 #if UNITY_2019_1_OR_NEWER
-        TGA,
+            TGA,
 #endif
         }
 
@@ -60,7 +62,9 @@ namespace MShot
             canShowUI = LoadToggleUI();
             is3D = LoadCameraPrespective();
             skybox = LoadClearFlags();
+#if POSTPROCESSING_3_2_2
             postProcessing = LoadPostProcessingSetting();
+#endif
         }
         private void OnDisable()
         {
@@ -72,7 +76,9 @@ namespace MShot
             SaveToggleUI(canShowUI);
             SaveCameraPrespective(is3D);
             SaveClearFlags(skybox);
+#if POSTPROCESSING_3_2_2
             SavePostProcessingSetting(postProcessing);
+#endif
         }
 
         #region SaveAndLoad
@@ -170,14 +176,16 @@ namespace MShot
         {
             return EditorPrefs.GetBool("skybox", true);
         }
+#if POSTPROCESSING_3_2_2
         private void SavePostProcessingSetting(bool postProcessing)
         {
             EditorPrefs.SetBool("postprocessing", postProcessing);
         }
         private bool LoadPostProcessingSetting()
         {
-            return EditorPrefs.GetBool("postprocessing",true);
+            return EditorPrefs.GetBool("postprocessing", true);
         }
+#endif
         #endregion
         private void OnGUI()
         {
@@ -262,7 +270,7 @@ namespace MShot
             canShowUI = GUILayout.Toggle(canShowUI, new GUIContent("UI"), buttonStyle, GUILayout.Width(105));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-
+#if POSTPROCESSING_3_2_2
             GUILayout.Space(10);
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
@@ -278,6 +286,7 @@ namespace MShot
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
+#endif
             GUILayout.Space(10);
 
             GUILayout.BeginHorizontal();
@@ -338,7 +347,7 @@ namespace MShot
                 {
                     selectedCamera.clearFlags = previousFlags;
                 }
-
+#if POSTPROCESSING_3_2_2
                 var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>().enabled;
                 if (!postProcessing)
                 {
@@ -348,12 +357,15 @@ namespace MShot
                 {
                     selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
                 }
+#endif
                 previewTexture = RenderPreview(selectedCamera);
                 previewSize.x = width;
                 previewSize.y = height;
                 selectedCamera.orthographic = previousCameraView;
                 selectedCamera.clearFlags = previousFlags;
+#if POSTPROCESSING_3_2_2
                 selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+#endif
             }
             if (selectedCamera != null)
             {
@@ -382,6 +394,7 @@ namespace MShot
                     {
                         selectedCamera.clearFlags = previousFlags;
                     }
+#if POSTPROCESSING_3_2_2
                     var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>().enabled;
                     if (!postProcessing)
                     {
@@ -391,7 +404,7 @@ namespace MShot
                     {
                         selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
                     }
-
+#endif
                     if (selectedCamera != null)
                     {
                         previewTexture = RenderPreview(selectedCamera);
@@ -399,7 +412,9 @@ namespace MShot
                         previewSize.y = height;
                         selectedCamera.orthographic = previousCameraView;
                         selectedCamera.clearFlags = previousFlags;
+#if POSTPROCESSING_3_2_2
                         selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+#endif
                     }
                 }
             }
@@ -584,6 +599,7 @@ namespace MShot
             {
                 camera.clearFlags = previousFlags;
             }
+#if POSTPROCESSING_3_2_2
             var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>().enabled;
             if (!postProcessing)
             {
@@ -593,6 +609,7 @@ namespace MShot
             {
                 selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
             }
+#endif
             float aspectRatio = (float)width / height;
 
             if (canShowUI)
@@ -622,7 +639,9 @@ namespace MShot
                 RenderTexture.active = null;
                 camera.orthographic = previousCameraView;
                 camera.clearFlags = previousFlags;
+#if POSTPROCESSING_3_2_2
                 camera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+#endif
 
                 DestroyImmediate(rt);
                 foreach (var pair in canvasData)
@@ -706,7 +725,9 @@ namespace MShot
                 RenderTexture.active = null;
                 camera.orthographic = previousCameraView;
                 camera.clearFlags = previousFlags;
+#if POSTPROCESSING_3_2_2
                 camera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+#endif
 
                 DestroyImmediate(rt);
                 foreach (var pair in canvasData)
