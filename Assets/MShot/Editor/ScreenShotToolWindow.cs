@@ -270,13 +270,14 @@ namespace MShot
             canShowUI = GUILayout.Toggle(canShowUI, new GUIContent("UI"), buttonStyle, GUILayout.Width(105));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-#if POSTPROCESSING_3_2_2
+
             GUILayout.Space(10);
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             skybox = GUILayout.Toggle(skybox, new GUIContent("Skybox"), buttonStyle, GUILayout.Width(105));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+#if POSTPROCESSING_3_2_2
             if (selectedCamera != null && selectedCamera.GetComponent<PostProcessLayer>() == true)
             {
                 GUILayout.Space(10);
@@ -348,15 +349,20 @@ namespace MShot
                     selectedCamera.clearFlags = previousFlags;
                 }
 #if POSTPROCESSING_3_2_2
-                var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>().enabled;
-                if (!postProcessing)
+                var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>() == true ? selectedCamera.GetComponent<PostProcessLayer>() : null;
+                if (selectedCamera.GetComponent<PostProcessLayer>() == true)
                 {
-                    selectedCamera.GetComponent<PostProcessLayer>().enabled = false;
+
+                    if (!postProcessing)
+                    {
+                        selectedCamera.GetComponent<PostProcessLayer>().enabled = false;
+                    }
+                    else
+                    {
+                        selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
+                    }
                 }
-                else
-                {
-                    selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
-                }
+
 #endif
                 previewTexture = RenderPreview(selectedCamera);
                 previewSize.x = width;
@@ -364,7 +370,11 @@ namespace MShot
                 selectedCamera.orthographic = previousCameraView;
                 selectedCamera.clearFlags = previousFlags;
 #if POSTPROCESSING_3_2_2
-                selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+                if (selectedCamera.GetComponent<PostProcessLayer>() == true)
+                {
+                    selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+                }
+
 #endif
             }
             if (selectedCamera != null)
@@ -395,14 +405,17 @@ namespace MShot
                         selectedCamera.clearFlags = previousFlags;
                     }
 #if POSTPROCESSING_3_2_2
-                    var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>().enabled;
-                    if (!postProcessing)
+                    var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>() == true ? selectedCamera.GetComponent<PostProcessLayer>() : null;
+                    if (selectedCamera.GetComponent<PostProcessLayer>() == true)
                     {
-                        selectedCamera.GetComponent<PostProcessLayer>().enabled = false;
-                    }
-                    else
-                    {
-                        selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
+                        if (!postProcessing)
+                        {
+                            selectedCamera.GetComponent<PostProcessLayer>().enabled = false;
+                        }
+                        else
+                        {
+                            selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
+                        }
                     }
 #endif
                     if (selectedCamera != null)
@@ -413,7 +426,10 @@ namespace MShot
                         selectedCamera.orthographic = previousCameraView;
                         selectedCamera.clearFlags = previousFlags;
 #if POSTPROCESSING_3_2_2
-                        selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+                        if (selectedCamera.GetComponent<PostProcessLayer>() == true)
+                        {
+                            selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+                        }
 #endif
                     }
                 }
@@ -529,7 +545,7 @@ namespace MShot
                 {
                     Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceCamera;
-                    canvas.worldCamera = selectedCamera;
+                    canvas.worldCamera = camera;
                     canvas.planeDistance = 1;
                 }
 
@@ -554,7 +570,7 @@ namespace MShot
                 {
                     Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    canvas.worldCamera = selectedCamera;
+                    canvas.worldCamera = camera;
                 }
 
                 camera.targetTexture = renderTexture;
@@ -580,7 +596,7 @@ namespace MShot
         {
 
             RenderTexture originalTargetTexture = camera.targetTexture;
-            bool previousCameraView = selectedCamera.orthographic;
+            bool previousCameraView = camera.orthographic;
             if (is3D)
             {
                 camera.orthographic = false;
@@ -589,7 +605,7 @@ namespace MShot
             {
                 camera.orthographic = true;
             }
-            var previousFlags = selectedCamera.clearFlags;
+            var previousFlags = camera.clearFlags;
 
             if (!skybox)
             {
@@ -600,14 +616,17 @@ namespace MShot
                 camera.clearFlags = previousFlags;
             }
 #if POSTPROCESSING_3_2_2
-            var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>().enabled;
-            if (!postProcessing)
+            var previousPostProcessingSetting = camera.GetComponent<PostProcessLayer>() == true ? camera.GetComponent<PostProcessLayer>() : null;
+            if (camera.GetComponent<PostProcessLayer>() == true)
             {
-                selectedCamera.GetComponent<PostProcessLayer>().enabled = false;
-            }
-            else
-            {
-                selectedCamera.GetComponent<PostProcessLayer>().enabled = true;
+                if (!postProcessing)
+                {
+                    camera.GetComponent<PostProcessLayer>().enabled = false;
+                }
+                else
+                {
+                    camera.GetComponent<PostProcessLayer>().enabled = true;
+                }
             }
 #endif
             float aspectRatio = (float)width / height;
@@ -625,7 +644,7 @@ namespace MShot
                 {
                     Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceCamera;
-                    canvas.worldCamera = selectedCamera;
+                    canvas.worldCamera = camera;
                     canvas.planeDistance = 1;
                 }
                 RenderTexture rt = new RenderTexture(width, Mathf.RoundToInt(width / aspectRatio), 24);
@@ -640,7 +659,8 @@ namespace MShot
                 camera.orthographic = previousCameraView;
                 camera.clearFlags = previousFlags;
 #if POSTPROCESSING_3_2_2
-                camera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
+                if (camera.GetComponent<PostProcessLayer>() == true)
+                    camera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
 #endif
 
                 DestroyImmediate(rt);
@@ -711,7 +731,7 @@ namespace MShot
                 {
                     Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    canvas.worldCamera = selectedCamera;
+                    canvas.worldCamera = camera;
                 }
 
                 RenderTexture rt = new RenderTexture(width, Mathf.RoundToInt(width / aspectRatio), 24);

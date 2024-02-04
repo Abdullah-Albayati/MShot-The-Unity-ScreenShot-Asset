@@ -34,11 +34,11 @@ namespace MShot
         {
             if (Input.GetKeyDown(screenshotKey))
             {
-                MShot.PhotoMode.instance.CaptureScreenshot(null,null,showUI);
+                MShot.PhotoMode.instance.CaptureScreenshot(false, showUI, null, null);
             }
         }
 
-        public Texture2D CaptureScreenshot(string screenShotName = default(string), Camera camera = null, bool showUI = false)
+        public Texture2D CaptureScreenshot(bool saveImage, bool showUI, string screenShotName = default(string), Camera camera = null)
         {
             string folderPath = System.IO.Path.Combine(Application.persistentDataPath, screenshotFolder);
             Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
@@ -114,18 +114,23 @@ namespace MShot
 
 
 
-
-            while (File.Exists(filePath))
+            if (saveImage)
             {
-                count++;
-                baseFileName = $"{fileName}_{count}";
-                filePath = System.IO.Path.Combine(folderPath, $"{baseFileName}.png");
+                while (File.Exists(filePath))
+                {
+                    count++;
+                    baseFileName = $"{fileName}_{count}";
+                    filePath = System.IO.Path.Combine(folderPath, $"{baseFileName}.png");
+                }
+                byte[] bytes = screenshot.EncodeToPNG();
+                System.IO.File.WriteAllBytes(filePath, bytes);
+
+                Debug.Log($"Screenshot saved to: {filePath}");
             }
-            byte[] bytes = screenshot.EncodeToPNG();
-            System.IO.File.WriteAllBytes(filePath, bytes);
-
-            Debug.Log($"Screenshot saved to: {filePath}");
-
+            else
+            {
+                Debug.Log("ScreenShot not saved to player directory.");
+            }
             return screenshot;
         }
     }
