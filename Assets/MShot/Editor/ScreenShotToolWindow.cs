@@ -3,7 +3,7 @@ using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 using System;
-#if POSTPROCESSING_3_2_2 
+#if UNITY_POST_PROCESSING_STACK_V2 
 using UnityEngine.Rendering.PostProcessing;
 #endif
 namespace MShot
@@ -62,7 +62,7 @@ namespace MShot
             canShowUI = LoadToggleUI();
             is3D = LoadCameraPrespective();
             skybox = LoadClearFlags();
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
             postProcessing = LoadPostProcessingSetting();
 #endif
         }
@@ -76,7 +76,7 @@ namespace MShot
             SaveToggleUI(canShowUI);
             SaveCameraPrespective(is3D);
             SaveClearFlags(skybox);
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
             SavePostProcessingSetting(postProcessing);
 #endif
         }
@@ -176,7 +176,7 @@ namespace MShot
         {
             return EditorPrefs.GetBool("skybox", true);
         }
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
         private void SavePostProcessingSetting(bool postProcessing)
         {
             EditorPrefs.SetBool("postprocessing", postProcessing);
@@ -277,7 +277,7 @@ namespace MShot
             skybox = GUILayout.Toggle(skybox, new GUIContent("Skybox"), buttonStyle, GUILayout.Width(105));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
             if (selectedCamera != null && selectedCamera.GetComponent<PostProcessLayer>() == true)
             {
                 GUILayout.Space(10);
@@ -348,7 +348,7 @@ namespace MShot
                 {
                     selectedCamera.clearFlags = previousFlags;
                 }
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
                 var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>() == true ? selectedCamera.GetComponent<PostProcessLayer>() : null;
                 if (selectedCamera.GetComponent<PostProcessLayer>() == true)
                 {
@@ -369,7 +369,7 @@ namespace MShot
                 previewSize.y = height;
                 selectedCamera.orthographic = previousCameraView;
                 selectedCamera.clearFlags = previousFlags;
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
                 if (selectedCamera.GetComponent<PostProcessLayer>() == true)
                 {
                     selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
@@ -404,7 +404,7 @@ namespace MShot
                     {
                         selectedCamera.clearFlags = previousFlags;
                     }
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
                     var previousPostProcessingSetting = selectedCamera.GetComponent<PostProcessLayer>() == true ? selectedCamera.GetComponent<PostProcessLayer>() : null;
                     if (selectedCamera.GetComponent<PostProcessLayer>() == true)
                     {
@@ -425,7 +425,7 @@ namespace MShot
                         previewSize.y = height;
                         selectedCamera.orthographic = previousCameraView;
                         selectedCamera.clearFlags = previousFlags;
-#if POSTPROCESSING_3_2_2
+#if UNITY_POST_PROCESSING_STACK_V2
                         if (selectedCamera.GetComponent<PostProcessLayer>() == true)
                         {
                             selectedCamera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
@@ -526,65 +526,50 @@ namespace MShot
         {
             int width = Mathf.RoundToInt(previewSize.x);
             int height = Mathf.RoundToInt(previewSize.y);
+            RenderTexture originalTargetTexture = camera.targetTexture;
 
             RenderTexture renderTexture = new RenderTexture(width, height, 24, RenderTextureFormat.Default)
             {
                 enableRandomWrite = true
             };
 
-            if (canShowUI)
+            Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
+
+            foreach (Canvas canvas in FindObjectsOfType<Canvas>())
             {
-                Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
+                canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
+            }
 
-                foreach (Canvas canvas in FindObjectsOfType<Canvas>())
-                {
-                    canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
-                }
+            foreach (var pair in canvasData)
+            {
+                Canvas canvas = pair.Key;
 
-                foreach (var pair in canvasData)
+                if (canShowUI)
                 {
-                    Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceCamera;
                     canvas.worldCamera = camera;
                     canvas.planeDistance = 1;
                 }
-
-                camera.targetTexture = renderTexture;
-                camera.Render();
-                camera.targetTexture = null;
-                foreach (var pair in canvasData)
+                else
                 {
-                    Canvas canvas = pair.Key;
-                    (canvas.renderMode, canvas.worldCamera) = pair.Value;
-                }
-            }
-            else
-            {
-                Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
-
-                foreach (Canvas canvas in FindObjectsOfType<Canvas>())
-                {
-                    canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
-                }
-                foreach (var pair in canvasData)
-                {
-                    Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                     canvas.worldCamera = camera;
                 }
+            }
 
-                camera.targetTexture = renderTexture;
-                camera.Render();
-                camera.targetTexture = null;
-                foreach (var pair in canvasData)
-                {
-                    Canvas canvas = pair.Key;
-                    (canvas.renderMode, canvas.worldCamera) = pair.Value;
-                }
+            camera.targetTexture = renderTexture;
+            camera.Render();
+            camera.targetTexture = originalTargetTexture;
+
+            foreach (var pair in canvasData)
+            {
+                Canvas canvas = pair.Key;
+                (canvas.renderMode, canvas.worldCamera) = pair.Value;
             }
 
             return renderTexture;
         }
+
 
         private void DrawTexture(Texture texture, params GUILayoutOption[] options)
         {
@@ -594,17 +579,9 @@ namespace MShot
 
         public void TakeScreenShot(Camera camera, string fullPath, ImageFormat format)
         {
-
             RenderTexture originalTargetTexture = camera.targetTexture;
             bool previousCameraView = camera.orthographic;
-            if (is3D)
-            {
-                camera.orthographic = false;
-            }
-            else
-            {
-                camera.orthographic = true;
-            }
+            bool is3D = !camera.orthographic;
             var previousFlags = camera.clearFlags;
 
             if (!skybox)
@@ -615,197 +592,120 @@ namespace MShot
             {
                 camera.clearFlags = previousFlags;
             }
-#if POSTPROCESSING_3_2_2
-            var previousPostProcessingSetting = camera.GetComponent<PostProcessLayer>() == true ? camera.GetComponent<PostProcessLayer>() : null;
-            if (camera.GetComponent<PostProcessLayer>() == true)
+
+#if UNITY_POST_PROCESSING_STACK_V2
+            var postProcessLayer = camera.GetComponent<PostProcessLayer>();
+            bool hasPostProcessLayer = postProcessLayer != null;
+
+            if (hasPostProcessLayer)
             {
-                if (!postProcessing)
-                {
-                    camera.GetComponent<PostProcessLayer>().enabled = false;
-                }
-                else
-                {
-                    camera.GetComponent<PostProcessLayer>().enabled = true;
-                }
+                postProcessLayer.enabled = postProcessing;
             }
 #endif
+
             float aspectRatio = (float)width / height;
 
-            if (canShowUI)
+            Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
+
+            foreach (Canvas canvas in FindObjectsOfType<Canvas>())
             {
-                Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
+                canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
+            }
 
-                foreach (Canvas canvas in FindObjectsOfType<Canvas>())
+            foreach (var pair in canvasData)
+            {
+                Canvas canvas = pair.Key;
+                if (canShowUI)
                 {
-                    canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
-                }
-
-                foreach (var pair in canvasData)
-                {
-                    Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceCamera;
                     canvas.worldCamera = camera;
                     canvas.planeDistance = 1;
                 }
-                RenderTexture rt = new RenderTexture(width, Mathf.RoundToInt(width / aspectRatio), 24);
-                camera.targetTexture = rt;
-
-                Texture2D screenShot = new Texture2D(width, Mathf.RoundToInt(width / aspectRatio), TextureFormat.RGBA32, false);
-                camera.Render();
-                RenderTexture.active = rt;
-                screenShot.ReadPixels(new Rect(0, 0, width, Mathf.RoundToInt(width / aspectRatio)), 0, 0);
-                camera.targetTexture = originalTargetTexture;
-                RenderTexture.active = null;
-                camera.orthographic = previousCameraView;
-                camera.clearFlags = previousFlags;
-#if POSTPROCESSING_3_2_2
-                if (camera.GetComponent<PostProcessLayer>() == true)
-                    camera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
-#endif
-
-                DestroyImmediate(rt);
-                foreach (var pair in canvasData)
+                else
                 {
-                    Canvas canvas = pair.Key;
-                    (canvas.renderMode, canvas.worldCamera) = pair.Value;
-                }
-                byte[] bytes;
-                string extension;
-
-                switch (imageFormat)
-                {
-                    case ImageFormat.PNG:
-                        bytes = screenShot.EncodeToPNG();
-                        extension = "png";
-                        break;
-                    case ImageFormat.JPEG:
-                        bytes = screenShot.EncodeToJPG();
-                        extension = "jpg";
-                        break;
-                    case ImageFormat.EXR:
-                        bytes = screenShot.EncodeToEXR();
-                        extension = "exr";
-                        break;
-                    default:
-                        bytes = screenShot.EncodeToPNG();
-                        extension = "png";
-                        break;
-                }
-#if UNITY_2019_OR_NEWER
-        if (imageFormat == ImageFormat.TGA)
-        {
-            bytes = screenShot.EncodeToTGA();
-            extension = "tga";
-        }
-#endif
-                int count = 0;
-                string baseFileName = fileName;
-                string absolutePath = Path.Combine(_path, $"{baseFileName}.{extension}");
-
-                while (File.Exists(absolutePath))
-                {
-                    if (count > 0)
-                    {
-                        baseFileName = $"{fileName}_{count}";
-                    }
-
-                    absolutePath = Path.Combine(_path, $"{baseFileName}.{extension}");
-                    count++;
-                }
-
-                File.WriteAllBytes(absolutePath, bytes);
-#if UNITY_EDITOR
-                UnityEditor.AssetDatabase.Refresh();
-#endif
-                Debug.Log($"Screenshot taken by '{camera.name}' have been saved to: '{fullPath}{fileName}.{extension}' with resolution '{width}x{height}' and format '{imageFormat}'");
-            }
-            else
-            {
-                Dictionary<Canvas, Tuple<RenderMode, Camera>> canvasData = new Dictionary<Canvas, Tuple<RenderMode, Camera>>();
-
-                foreach (Canvas canvas in FindObjectsOfType<Canvas>())
-                {
-                    canvasData.Add(canvas, new Tuple<RenderMode, Camera>(canvas.renderMode, canvas.worldCamera));
-                }
-                foreach (var pair in canvasData)
-                {
-                    Canvas canvas = pair.Key;
                     canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                     canvas.worldCamera = camera;
                 }
-
-                RenderTexture rt = new RenderTexture(width, Mathf.RoundToInt(width / aspectRatio), 24);
-                camera.targetTexture = rt;
-
-                Texture2D screenShot = new Texture2D(width, Mathf.RoundToInt(width / aspectRatio), TextureFormat.RGBA32, false);
-                camera.Render();
-                RenderTexture.active = rt;
-                screenShot.ReadPixels(new Rect(0, 0, width, Mathf.RoundToInt(width / aspectRatio)), 0, 0);
-                camera.targetTexture = originalTargetTexture;
-                RenderTexture.active = null;
-                camera.orthographic = previousCameraView;
-                camera.clearFlags = previousFlags;
-#if POSTPROCESSING_3_2_2
-                camera.GetComponent<PostProcessLayer>().enabled = previousPostProcessingSetting;
-#endif
-
-                DestroyImmediate(rt);
-                foreach (var pair in canvasData)
-                {
-                    Canvas canvas = pair.Key;
-                    (canvas.renderMode, canvas.worldCamera) = pair.Value;
-                }
-
-                byte[] bytes;
-                string extension;
-
-                switch (imageFormat)
-                {
-                    case ImageFormat.PNG:
-                        bytes = screenShot.EncodeToPNG();
-                        extension = "png";
-                        break;
-                    case ImageFormat.JPEG:
-                        bytes = screenShot.EncodeToJPG();
-                        extension = "jpg";
-                        break;
-                    case ImageFormat.EXR:
-                        bytes = screenShot.EncodeToEXR();
-                        extension = "exr";
-                        break;
-                    default:
-                        bytes = screenShot.EncodeToPNG();
-                        extension = "png";
-                        break;
-                }
-#if UNITY_2019_OR_NEWER
-        if (imageFormat == ImageFormat.TGA)
-        {
-            bytes = screenShot.EncodeToTGA();
-            extension = "tga";
-        }
-#endif
-                int count = 0;
-                string baseFileName = fileName;
-                string absolutePath = Path.Combine(_path, $"{baseFileName}.{extension}");
-
-                while (File.Exists(absolutePath))
-                {
-                    if (count > 0)
-                    {
-                        baseFileName = $"{fileName}_{count}";
-                    }
-
-                    absolutePath = Path.Combine(_path, $"{baseFileName}.{extension}");
-                    count++;
-                }
-
-                File.WriteAllBytes(absolutePath, bytes);
-#if UNITY_EDITOR
-                UnityEditor.AssetDatabase.Refresh();
-#endif
-                Debug.Log($"Screenshot taken by '{camera.name}' have been saved to: '{fullPath}{fileName}.{extension}' with resolution '{width}x{height}' and format '{imageFormat}'");
             }
+
+            RenderTexture rt = new RenderTexture(width, Mathf.RoundToInt(width / aspectRatio), 24);
+            camera.targetTexture = rt;
+
+            Texture2D screenShot = new Texture2D(width, Mathf.RoundToInt(width / aspectRatio), TextureFormat.RGBA32, false);
+            camera.Render();
+            RenderTexture.active = rt;
+            screenShot.ReadPixels(new Rect(0, 0, width, Mathf.RoundToInt(width / aspectRatio)), 0, 0);
+            camera.targetTexture = originalTargetTexture;
+            RenderTexture.active = null;
+            camera.orthographic = previousCameraView;
+            camera.clearFlags = previousFlags;
+
+#if UNITY_POST_PROCESSING_STACK_V2
+            if (hasPostProcessLayer)
+                postProcessLayer.enabled = postProcessLayer;
+#endif
+
+            DestroyImmediate(rt);
+
+            foreach (var pair in canvasData)
+            {
+                Canvas canvas = pair.Key;
+                (canvas.renderMode, canvas.worldCamera) = pair.Value;
+            }
+
+            byte[] bytes;
+            string extension;
+
+            switch (imageFormat)
+            {
+                case ImageFormat.PNG:
+                    bytes = screenShot.EncodeToPNG();
+                    extension = "png";
+                    break;
+                case ImageFormat.JPEG:
+                    bytes = screenShot.EncodeToJPG();
+                    extension = "jpg";
+                    break;
+                case ImageFormat.EXR:
+                    bytes = screenShot.EncodeToEXR();
+                    extension = "exr";
+                    break;
+                default:
+                    bytes = screenShot.EncodeToPNG();
+                    extension = "png";
+                    break;
+            }
+
+#if UNITY_2019_OR_NEWER
+    if (imageFormat == ImageFormat.TGA)
+    {
+        bytes = screenShot.EncodeToTGA();
+        extension = "tga";
+    }
+#endif
+
+            int count = 0;
+            string baseFileName = fileName;
+            string absolutePath = Path.Combine(_path, $"{baseFileName}.{extension}");
+
+            while (File.Exists(absolutePath))
+            {
+                if (count > 0)
+                {
+                    baseFileName = $"{fileName}_{count}";
+                }
+
+                absolutePath = Path.Combine(_path, $"{baseFileName}.{extension}");
+                count++;
+            }
+
+            File.WriteAllBytes(absolutePath, bytes);
+
+#if UNITY_EDITOR
+            UnityEditor.AssetDatabase.Refresh();
+#endif
+
+            Debug.Log($"Screenshot taken by '{camera.name}' have been saved to: '{fullPath}{fileName}.{extension}' with resolution '{width}x{height}' and format '{imageFormat}'");
         }
     }
 }
